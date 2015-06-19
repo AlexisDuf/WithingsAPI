@@ -18,6 +18,8 @@ mongoose.connect(config.mongo.uri, config.mongo.options);
 
 var app = express();
 
+require('./config/cronStore').start();
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');

@@ -39,9 +39,7 @@ WithingsOAuth.prototype.authenticate = function(req, res){
 			   req.session.oauth.token_secret = oauth_token_secret;
 
          var urlAuth = self.oauth.signUrl(OAuth_cfg.AUTHORIZATION_URL, oauth_token, oauth_token_secret);
-
          res.redirect(urlAuth);
-         //return res.status(200).json(urlAuth);
 	   }
   });
 }
@@ -57,44 +55,35 @@ WithingsOAuth.prototype.getAccessToken = function(req, res){
       req.session.oauth.accessToken = oauthAccessToken;
       req.session.oauth.accessTokenSecret = oauthAccessTokenSecret;
 
-      User_withings.find(function(err, users){
-        console.log(users);
-        if (users.length > 0) {
-          users.remove(function(err){
-            if(err) console.log(err);
-            //well removed
-          });
-        }
-      });
-
       User_withings.findOrCreate({
         withingsId: self.userid,
         accessToken : oauthAccessToken,
         accessTokenSecret : oauthAccessTokenSecret
         }, function (err, user) {
-          res.redirect('/api/withings/')
+          //nothing
       });
     }
   });
 }
 
 
-WithingsOAuth.prototype.storeSleepMeasure = function(){
+WithingsOAuth.prototype.storeSleepMeasure = function(start, end){
   var self = this;
 
+  var dateStart = start,
+      dateEnd = end;
+
   User_withings.find(function(err, users){
-    var today = new Date();
-    var yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    var currentUser = users[0].withingsId
+
+    var currentUser = users[users.length - 1];
 
     var urlToSign = qs.stringify({
-      userid: currentUser,
-      startdate : today.getTime(),
-      enddate : yesterday.getTime(),
+      userid: currentUser.withingsId,
+      startdate : dateStart,
+      enddate : dateEnd
     });
 
-   var urlSleepMeasure = self.oauth.signUrl(OAuth_cfg.SLEEP_MEASURE + urlToSign, users[0].accessToken, users[0].accessTokenSecret);
+   var urlSleepMeasure = self.oauth.signUrl(OAuth_cfg.SLEEP_MEASURE + urlToSign, currentUser.accessToken,currentUser.accessTokenSecret);
 
    self.oauth.get(urlSleepMeasure,null, null, function (err, body, resu) {
      if (err) {
@@ -110,9 +99,11 @@ WithingsOAuth.prototype.storeSleepMeasure = function(){
        }
        return done(new Error('Failed to fetch user profile', err));
      }
+     console.log(dateStart);
        Sleep_measure.findOrCreate({
          withingsId: currentUser,
-         backupDate: today.getTime(),
+         startDate: new Date(dateStart),
+         enddate : new Date(dateEnd),
          dataMeasure: body
        }, function(err, sleep){
         if(err) console.log(err);
@@ -153,9 +144,20 @@ WithingsOAuth.prototype.storeSleepSummary = function(){
        }
        return done(new Error('Failed to fetch user profile', err));
      }
+
+      var json = JSON.parse(body);
+
+      if(json.status === 0){
+        for (var i = 0; i < json.body.series.length; i++) {
+          var sleep = json.body.series[i];
+          console.log(sleep.startdate+"-"+ sleep.enddate);
+          self.storeSleepMeasure(sleep.startdate, sleep.enddate);
+        }
+      }
+
        Sleep_summary.findOrCreate({
          withingsId: currentUser,
-         backupDate: today.getTime(),
+         lengthSeries: json.body.series.length,
          dataSummary: body
        }, function(err, sleep){
         if(err) console.log(err);

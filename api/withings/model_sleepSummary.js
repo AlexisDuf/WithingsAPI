@@ -6,7 +6,7 @@ var findOrCreate = require('mongoose-findorcreate');
 
 var SleepSummarySchema = new Schema({
   withingsId: String,
-  backupDate: Date,
+  lengthSeries: Number,
   dataSummary: String
 });
 

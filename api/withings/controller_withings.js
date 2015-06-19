@@ -11,7 +11,7 @@ module.exports = {
   dataAccess : function(req, res){
     WithingsOAuth.getAccessToken(req, res);
   },
-  sleepMeasure : function(req, res){
-    WithingsOAuth.storeSleepMeasure(req, res);
+  store_manually : function(req, res){
+    WithingsOAuth.storeSleepSummary();
   }
 }
