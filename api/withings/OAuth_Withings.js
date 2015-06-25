@@ -60,7 +60,8 @@ WithingsOAuth.prototype.getAccessToken = function(req, res){
         accessToken : oauthAccessToken,
         accessTokenSecret : oauthAccessTokenSecret
         }, function (err, user) {
-          //nothing
+          if(err) res.render('error', { error: err, message: 'Something wrong happened' });
+          res.render('connected', { user: user.withingsId });
       });
     }
   });
@@ -99,11 +100,11 @@ WithingsOAuth.prototype.storeSleepMeasure = function(start, end){
        }
        return done(new Error('Failed to fetch user profile', err));
      }
-     console.log(dateStart);
+
        Sleep_measure.findOrCreate({
-         withingsId: currentUser,
-         startDate: new Date(dateStart),
-         enddate : new Date(dateEnd),
+         withingsId: currentUser.withingsId,
+         startDate: new Date(dateStart * 1000),
+         enddate : new Date(dateEnd * 1000),
          dataMeasure: body
        }, function(err, sleep){
         if(err) console.log(err);
@@ -113,7 +114,7 @@ WithingsOAuth.prototype.storeSleepMeasure = function(start, end){
  });
 }
 
-WithingsOAuth.prototype.storeSleepSummary = function(){
+WithingsOAuth.prototype.storeSleepSummary = function(req, res){
   var self = this;
 
   User_withings.find(function(err, users){
@@ -150,18 +151,19 @@ WithingsOAuth.prototype.storeSleepSummary = function(){
       if(json.status === 0){
         for (var i = 0; i < json.body.series.length; i++) {
           var sleep = json.body.series[i];
-          console.log(sleep.startdate+"-"+ sleep.enddate);
           self.storeSleepMeasure(sleep.startdate, sleep.enddate);
         }
       }
 
        Sleep_summary.findOrCreate({
-         withingsId: currentUser,
+         withingsId: currentUser.withingsId,
          lengthSeries: json.body.series.length,
          dataSummary: body
        }, function(err, sleep){
-        if(err) console.log(err);
-        //well saved
+         if (res != undefined) {
+           if(err) res.render('error', { error: err, message: 'Something wrong happened' });
+           res.render('saved', { message: 'data well saved' });
+         }
        });
    });
  });

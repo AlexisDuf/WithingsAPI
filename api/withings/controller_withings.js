@@ -12,6 +12,6 @@ module.exports = {
     WithingsOAuth.getAccessToken(req, res);
   },
   store_manually : function(req, res){
-    WithingsOAuth.storeSleepSummary();
+    WithingsOAuth.storeSleepSummary(req, res);
   }
 }
