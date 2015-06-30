@@ -156,7 +156,7 @@ WithingsOAuth.prototype.storeSleepSummary = function(req, res){
       }
 
        Sleep_summary.findOrCreate({
-         withingsId: currentUser.withingsId,
+         withingsId: currentUser,
          lengthSeries: json.body.series.length,
          dataSummary: body
        }, function(err, sleep){
